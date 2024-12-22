@@ -6,17 +6,19 @@ typedef struct{
 }Server;
 
 void* handleRequest(void* args){
+	printf("\nHandling Client\n");
 	///receive message here
 	int socketID = *(int *)args;
 	ssize_t nread;
 	char buf[BUF_SIZE];
-
-	nread = read(socketID,buf,BUF_SIZE);
-	if(nread == -1){
-		printf("Unable to read");
-		exit(EXIT_FAILURE);
+	while(1){
+		nread = read(socketID,buf,BUF_SIZE);
+		if(nread == -1){
+			printf("Unable to read");
+			exit(EXIT_FAILURE);
+		}
+		printf("%s",buf);
 	}
-	printf("%s",buf);
 
 }
 
@@ -82,6 +84,8 @@ int main(int argc, char**argv){
 		printf("Could Not connect");
 		exit(EXIT_FAILURE);
 	}
+
+
 	//create our own custom stuff
 	char *message;
 	printf("Enter Username: ");
@@ -104,20 +108,9 @@ int main(int argc, char**argv){
 			printf("Unale to write");
 			exit(EXIT_FAILURE);
 		}
-
-		//receive message here
-		//nread = read(sfd,buf,BUF_SIZE);
-		//if(nread == -1){
-		//	printf("Unable to read");
-		//	exit(EXIT_FAILURE);
-		//}
-		//printf("%s",buf);
-		//
-		//
-		//
-		//create PThread to handl listening heere
-		//pthread_t thread_id;
-		//pthread_create(&thread_id,NULL,handleRequest,(void *)&server.serverSocket);
+		else{
+			printf("\nWritten to server\n");
+		}
 	}
 	
 	exit(EXIT_SUCCESS);

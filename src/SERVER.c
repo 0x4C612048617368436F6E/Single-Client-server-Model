@@ -21,16 +21,17 @@ void* handleClient(void* args){
 	int positionInArray = *(int *)args;
 	//receive from client
 	while(1){
+		//printf("\nClient Thread\n");
 		nread = recvfrom(clients[positionInArray].clientSocket,buf,BUF_SIZE,0,(struct sockaddr *)&clients[positionInArray].peer_addr,&clients[positionInArray].peer_addrlen);
-		if(nread == -1) continue;
+		if(nread == -1) {
+			continue;
+		}else{
+			printf("\nReceived from server.. Client thread\n");
+		}
 		//send message to other clients except client we are handling
 		buf[nread] = '\0';
 		sprintf(sendToOtherClients,"%s:%s",clients[positionInArray].clientName,buf);
-		//for(size_t i=0; i<sizeof(clients)/sizeof(clients[0]);i++){
-		//	if(sendto(clients[i].clientSocket,sendToOtherClients,strlen(sendToOtherClients),0,(struct sockaddr*)&clients[i].peer_addr,clients[i].peer_addrlen)!=strlen(sendToOtherClients)){
-		//		printf("Error Occured");
-		//	}
-		//}
+		printf("%s\n",buf);
 	}
 	free(args);
 }
@@ -95,65 +96,71 @@ void serverInitialization(int argc, char**argv){
 	//Below will handle the inter-chnage of information between server and client
 	printf("\nServer is listening\n");
 	do{
+		//printf("\nServer Thread\n");
 		char host[NI_MAXHOST], service[NI_MAXSERV];
 		peer_addrlen = sizeof(struct sockaddr_storage);
 		//receiver from client, but client need to connect
-		printf("Nothing here");
-		nread = recvfrom(sfd,buf,BUF_SIZE,0,(struct sockaddr *)&peer_addr,&peer_addrlen);
-		if(nread == -1) continue;
+		//printf("Nothing here");
+	
 		//store client information here
-		buf[nread] = '\0';
-		Client client;
-		client.clientID = clientCounter + 1;
-		//client name
-		sprintf(client.clientName,"%s",buf);
-		client.clientName[strlen(client.clientName)] = '\0';
-		client.clientSocket = sfd;
-		//handle situation where client laves server, let others known
-		client.peer_addr = peer_addr;
-		client.peer_addrlen = peer_addrlen;
-		//check if bad
-		fprintf(stdout,"%s joined the chat",client.clientName);
-		int pointer = strlen(welcomeMsg);
-		char welcomeMsg[BUF_SIZE];
-		sprintf(welcomeMsg,"Hello %s",buf);
-		welcomeMsg[strlen(welcomeMsg)] = '\0';
-		s = getnameinfo((struct sockaddr *) &client.peer_addr, client.peer_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV);
-		//check if value is good, if true, print all the values
-		if(s == 0){
-			//printf("Received %zd bytes from %s:%s\n",nread,host,service);
-			//printf("%s Joined the server\n",buf);
-			//send welcome to user
-			if(sendto(client.clientSocket,welcomeMsg,strlen(welcomeMsg),0,(struct sockaddr *)&client.peer_addr,client.peer_addrlen)!=strlen(welcomeMsg)){
-				//handle error later
-				printf("Error occured");
+		//buf[nread] = '\0';
+		//check if array is empty or if client does not alreayd exists
+		if(clientCounter == 0){
+
+			nread = recvfrom(sfd,buf,BUF_SIZE,0,(struct sockaddr *)&peer_addr,&peer_addrlen);
+			if(nread == -1){
+				continue;
+			}else{
+				printf("\nReceived from server.. Main thread\n");
 			}
-			/*
-			//send {Name of client} Joined server to all clients in the current session
-			char* sendToOtherClients;
-			sprintf(sendToOtherClients,"%s joined the server",client.clientName);
 
-			for(int i=0; i<sizeof(clients)/sizeof(clients[0]);i++){
-				if(sendto(clients[i].clientSocket,sendToOtherClients,strlen(sendToOtherClients),0,(struct sockaddr*)&clients[i].peer_addr,clients[i].peer_addrlen)!=strlen(sendToOtherClients)){
-					printf("An error occured");
+
+			Client client;
+			client.clientID = clientCounter + 1;
+			//client name
+			sprintf(client.clientName,"%s",buf);
+			client.clientName[strlen(client.clientName)] = '\0';
+			client.clientSocket = sfd;
+			//handle situation where client laves server, let others known
+			client.peer_addr = peer_addr;
+			client.peer_addrlen = peer_addrlen;
+			//check if bad
+			fprintf(stdout,"%s joined the chat",client.clientName);
+			int pointer = strlen(welcomeMsg);
+			char welcomeMsg[BUF_SIZE];
+			sprintf(welcomeMsg,"Hello %s",buf);
+			welcomeMsg[strlen(welcomeMsg)] = '\0';
+			s = getnameinfo((struct sockaddr *) &client.peer_addr, client.peer_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV);
+			//check if value is good, if true, print all the values
+			if(s == 0){
+				//printf("Received %zd bytes from %s:%s\n",nread,host,service);
+				//printf("%s Joined the server\n",buf);
+				//send welcome to user
+				if(sendto(client.clientSocket,welcomeMsg,strlen(welcomeMsg),0,(struct sockaddr *)&client.peer_addr,client.peer_addrlen)!=strlen(welcomeMsg)){
+				//handle error later
+				printf("\nError occured\n");
+				
+				}else{
+				printf("\nOK\n");
 				}
-			}*/
-		}else{
-			printf("Error  Occured");
 		
+			}
+			//lets send
+			//add client to the array
+			clients[clientCounter++]=client;
+			printf("%i",clientCounter);
+			//create thread to
+			//pthread_t thread_id;
+			int* clientCounterPtr = malloc(sizeof(int));
+			*clientCounterPtr = clientCounter-1;
+			pthread_create(&thread_id[clientCounter-1],NULL,handleClient,clientCounterPtr);	
 		}
-		//lets send
-		//add client to the array
-		clients[clientCounter++]=client ;
-		//create thread to
-		//pthread_t thread_id;
-		int* clientCounterPtr = malloc(sizeof(int));
-		*clientCounterPtr = clientCounter-1;
-		pthread_create(&thread_id[clientCounter-1],NULL,handleClient,clientCounterPtr);
-		
-	}while(1);
-
-	//Next and most important thing is to handle multiple users at the same time
-
+		//check if client does not already exist
+		/*for(size_t i = 0; i< sizeof(clients)/sizeof(clients[0]);i++){
+			if(clients[i].peer_addr.ss_family == peer_addr.ss_family){
+				printf("\nClient Socket already exist\n");
+			}
+		}*/
+	}while (1);
 	return;
 }
