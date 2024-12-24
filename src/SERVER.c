@@ -36,6 +36,29 @@ void* handleClient(void* args){
 	free(args);
 }
 
+void PrintClientAddress(struct sockaddr *client){
+	char ip[INET_ADDRSTRLEN];
+    struct sockaddr_in *sa_in = (struct sockaddr_in *)client;
+	// Convert the binary IP address to a string
+    inet_ntop(AF_INET, &(sa_in->sin_addr), ip, INET_ADDRSTRLEN);
+
+    // Print the IP address and port
+    printf("\nIP Address: %s\n", ip);
+    printf("\nPort: %d\n", ntohs(sa_in->sin_port));
+}
+
+//return 0 if false else 1 if true
+int CheckIfClientUserNameAlreadyExist(char username[],int sfd){
+	int val = 0;
+	for(size_t i = 0; i<sizeof(clients)/sizeof(clients[0]);i++){
+		if(strcmp(username,clients[i].clientName)==0 || clients[i].clientSocket == sfd){
+			val = 1;
+			break;
+		}
+	}
+	return val;
+}
+
 void serverInitialization(int argc, char**argv){
 	int sfd,s;
 	char buf[BUF_SIZE];
@@ -111,7 +134,9 @@ void serverInitialization(int argc, char**argv){
 			if(nread == -1){
 				continue;
 			}else{
-				printf("\nReceived from server.. Main thread\n");
+				struct sockaddr* temp = (struct sockaddr *)&peer_addr;
+				PrintClientAddress(temp);
+				printf("\nReceived from server.. Main thread\t Socket is:%i\n",sfd);
 			}
 
 
@@ -154,13 +179,28 @@ void serverInitialization(int argc, char**argv){
 			int* clientCounterPtr = malloc(sizeof(int));
 			*clientCounterPtr = clientCounter-1;
 			pthread_create(&thread_id[clientCounter-1],NULL,handleClient,clientCounterPtr);	
-		}
-		//check if client does not already exist
-		/*for(size_t i = 0; i< sizeof(clients)/sizeof(clients[0]);i++){
-			if(clients[i].peer_addr.ss_family == peer_addr.ss_family){
-				printf("\nClient Socket already exist\n");
+		}else{
+			//Clients are here already
+			//check if client does not already exist
+			nread = recvfrom(sfd,buf,BUF_SIZE,0,(struct sockaddr *)&peer_addr,&peer_addrlen);
+			if(nread == -1){
+				continue;
+			}else{
+				struct sockaddr* temp = (struct sockaddr *)&peer_addr;
+				PrintClientAddress(temp);
+				printf("\nReceived from server.. Main thread\tSocket is:%i\n",sfd);
 			}
-		}*/
+			if(CheckIfClientUserNameAlreadyExist(buf,sfd) == 0){
+				//can create instance of the client and increment client
+				printf("\nClient does not already exist\n");
+			}else{
+				printf("\nClient already exist\n");
+				//send message to client telling them this and disconnect them
+			}
+		}
+		//}
+		//}
+		
 	}while (1);
 	return;
 }
