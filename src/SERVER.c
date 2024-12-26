@@ -8,9 +8,9 @@ typedef struct{
 	socklen_t peer_addrlen; //client addr len
 }Client;
 
-Client clients[10];
+Client clients[1];
 int clientCounter = 0;
-pthread_t thread_id[10];
+pthread_t thread_id[1];
 
 //function to handle client
 void* handleClient(void* args){
@@ -26,7 +26,7 @@ void* handleClient(void* args){
 		if(nread == -1) {
 			continue;
 		}else{
-			printf("\nReceived from server.. Client thread\n");
+			printf("\n%s: ",clients[positionInArray].clientName);
 		}
 		//send message to other clients except client we are handling
 		buf[nread] = '\0';
@@ -44,7 +44,7 @@ void PrintClientAddress(struct sockaddr *client){
 
     // Print the IP address and port
     printf("\nIP Address: %s\n", ip);
-    printf("\nPort: %d\n", ntohs(sa_in->sin_port));
+    printf("Port: %d\n", ntohs(sa_in->sin_port));
 }
 
 //return 0 if false else 1 if true
@@ -126,7 +126,6 @@ void serverInitialization(int argc, char**argv){
 		//printf("Nothing here");
 	
 		//store client information here
-		//buf[nread] = '\0';
 		//check if array is empty or if client does not alreayd exists
 		if(clientCounter == 0){
 
@@ -136,7 +135,8 @@ void serverInitialization(int argc, char**argv){
 			}else{
 				struct sockaddr* temp = (struct sockaddr *)&peer_addr;
 				PrintClientAddress(temp);
-				printf("\nReceived from server.. Main thread\t Socket is:%i\n",sfd);
+				printf("\n%s joined the chat\n",buf);
+				//\t Socket is:%i\n,sfd);
 			}
 
 
@@ -150,7 +150,7 @@ void serverInitialization(int argc, char**argv){
 			client.peer_addr = peer_addr;
 			client.peer_addrlen = peer_addrlen;
 			//check if bad
-			fprintf(stdout,"%s joined the chat",client.clientName);
+			//fprintf(stdout,"%s joined the chat",client.clientName);
 			int pointer = strlen(welcomeMsg);
 			char welcomeMsg[BUF_SIZE];
 			sprintf(welcomeMsg,"Hello %s",buf);
@@ -158,49 +158,27 @@ void serverInitialization(int argc, char**argv){
 			s = getnameinfo((struct sockaddr *) &client.peer_addr, client.peer_addrlen, host, NI_MAXHOST, service, NI_MAXSERV, NI_NUMERICSERV);
 			//check if value is good, if true, print all the values
 			if(s == 0){
-				//printf("Received %zd bytes from %s:%s\n",nread,host,service);
-				//printf("%s Joined the server\n",buf);
 				//send welcome to user
 				if(sendto(client.clientSocket,welcomeMsg,strlen(welcomeMsg),0,(struct sockaddr *)&client.peer_addr,client.peer_addrlen)!=strlen(welcomeMsg)){
 				//handle error later
 				printf("\nError occured\n");
 				
-				}else{
-				printf("\nOK\n");
-				}
+				}//else{
+				//printf("\nOK\n");
+				//
 		
 			}
 			//lets send
 			//add client to the array
 			clients[clientCounter++]=client;
-			printf("%i",clientCounter);
 			//create thread to
 			//pthread_t thread_id;
 			int* clientCounterPtr = malloc(sizeof(int));
 			*clientCounterPtr = clientCounter-1;
-			pthread_create(&thread_id[clientCounter-1],NULL,handleClient,clientCounterPtr);	
-		}else{
-			//Clients are here already
-			//check if client does not already exist
-			nread = recvfrom(sfd,buf,BUF_SIZE,0,(struct sockaddr *)&peer_addr,&peer_addrlen);
-			if(nread == -1){
-				continue;
-			}else{
-				struct sockaddr* temp = (struct sockaddr *)&peer_addr;
-				PrintClientAddress(temp);
-				printf("\nReceived from server.. Main thread\tSocket is:%i\n",sfd);
-			}
-			if(CheckIfClientUserNameAlreadyExist(buf,sfd) == 0){
-				//can create instance of the client and increment client
-				printf("\nClient does not already exist\n");
-			}else{
-				printf("\nClient already exist\n");
-				//send message to client telling them this and disconnect them
-			}
+			pthread_create(&thread_id[clientCounter-1],NULL,handleClient,clientCounterPtr);
 		}
-		//}
-		//}
 		
 	}while (1);
+	close(sfd);
 	return;
 }

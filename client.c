@@ -6,7 +6,6 @@ typedef struct{
 }Server;
 
 void* handleRequest(void* args){
-	printf("\nHandling Client\n");
 	///receive message here
 	int socketID = *(int *)args;
 	ssize_t nread;
@@ -16,8 +15,9 @@ void* handleRequest(void* args){
 		if(nread == -1){
 			printf("Unable to read");
 			exit(EXIT_FAILURE);
+		}else{
+			printf("%s",buf);
 		}
-		printf("%s",buf);
 	}
 
 }
@@ -85,7 +85,6 @@ int main(int argc, char**argv){
 		exit(EXIT_FAILURE);
 	}
 
-
 	//create our own custom stuff
 	char *message;
 	printf("Enter Username: ");
@@ -98,19 +97,16 @@ int main(int argc, char**argv){
 	pthread_create(&thread_id,NULL,handleRequest,sfdClient);
 	while(1){
 		message = getUserInput();
-		//printf("Welcome %s\n",message);
-		//user will be prompted to enter what to send
-		//send username to server
-		//pthread_t thread_id;
-		//pthread_create(&thread_id,NULL,handleRequest,(void *)&server.serverSocket);
 		len = strlen(message)+1;
 		if(write(sfd,message,len)!=len){
-			printf("Unale to write");
+			printf("Unable to write");
 			exit(EXIT_FAILURE);
 		}
 		else{
 			printf("\nWritten to server\n");
 		}
+
+		printf("Enter message: \n");
 	}
 	
 	exit(EXIT_SUCCESS);

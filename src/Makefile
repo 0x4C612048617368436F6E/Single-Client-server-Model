@@ -1,7 +1,7 @@
 CC:=gcc
 SRC:=${wildcard *.c}
 OBJ:=${SRC:.c=.o}
-CFLAGS:=-Wextra -pedantic
+CFLAGS:=-Wextra -pedantic -lpthread
 RTC:=RTC
 INCLUDE=I../include/
 
